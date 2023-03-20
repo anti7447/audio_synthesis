@@ -1,39 +1,35 @@
+// So that there is no console
+#![windows_subsystem = "windows"]
+
+// import frameworks
 use std::time::Duration;
 use rodio::{OutputStream, Sink};
 use rodio::source::{SineWave, Source, Amplify, TakeDuration};
-use druid::widget::{Align, Flex, Label, TextBox};
-use druid::{AppLauncher, Data, Env, Lens, LocalizedString, Widget, WindowDesc, WidgetExt};
+use druid::widget::{Align, Flex, TextBox, Button};
+use druid::{AppLauncher, Data, Lens, LocalizedString, Widget, WindowDesc, WidgetExt};
 
 const VERTICAL_WIDGET_SPACING: f64 = 20.0;
-const TEXT_BOX_WIDTH: f64 = 200.0;
-const WINDOW_TITLE: LocalizedString<HelloState> = LocalizedString::new("Hello World!");
+const TEXT_BOX_WIDTH: f64 = 75.0;
+const WINDOW_TITLE: LocalizedString<MainState> = LocalizedString::new("Hello World!");
 
 #[derive(Clone, Data, Lens)]
-struct HelloState {
-    name: String,
+struct MainState {
+    freq: String,
+    time: String,
+    volume: String,
 }
 
+// impl Lens<MainState, f32> for MainState {
+//     fn with<V, F: FnOnce(&f32) -> V>(&self, data: &MainState, f: F) -> V {
+//         f(&data.freq)
+//     }
+
+//     fn with_mut<V, F: FnOnce(&mut f32) -> V>(&self, data: &mut MainState, f: F) -> V {
+//         f(&mut data.freq)
+//     }
+// }
+
 fn main() {
-
-    // ====================================================================================================== //
-
-    // Создаем источник синусоидального сигнала с частотой 440 Гц.
-    let (_stream, stream_handle) = OutputStream::try_default().unwrap();
-    let sink = Sink::try_new(&stream_handle).unwrap();
-
-    // Add a dummy source of the sake of the example.
-
-    sink.append(add_source(440.0, 0.5, 0.20));
-    sink.append(add_source(420.0, 0.5, 0.50));
-    sink.append(add_source(350.0, 0.5, 1.0));
-    sink.append(add_source(440.0, 0.5, 0.20));
-
-    // The sound plays in a separate thread. This call will block the current thread until the sink
-    // has finished playing all its queued sounds.
-    sink.sleep_until_end();
-
-    // ====================================================================================================== //
-
 
     // describe the main window
     let main_window = WindowDesc::new(build_root_widget())
@@ -41,8 +37,10 @@ fn main() {
         .window_size((400.0, 400.0));
 
     // create the initial app state
-    let initial_state = HelloState {
-        name: "World".into(),
+    let initial_state = MainState {
+        freq: "440.0".into(),
+        time: "0.1".into(),
+        volume: "0.20".into(),
     };
 
     // start the application
@@ -52,23 +50,64 @@ fn main() {
 
 }
 
-fn build_root_widget() -> impl Widget<HelloState> {
-    // a label that will determine its text based on the current app data.
-    let label = Label::new(|data: &HelloState, _env: &Env| format!("Hello {}!", data.name));
-    // a textbox that modifies `name`.
-    let textbox = TextBox::new()
-        .with_placeholder("Who are we greeting?")
-        .fix_width(TEXT_BOX_WIDTH)
-        .lens(HelloState::name);
+fn build_root_widget() -> impl Widget<MainState> {
+    
+    // let label = Label::new(|data: &MainState, _env: &Env| format!("Hello {}!", data.name));
 
-    // arrange the two widgets vertically, with some padding
+    let frequency = TextBox::new()
+        .with_placeholder("Frequency")
+        .fix_width(TEXT_BOX_WIDTH)
+        .lens(MainState::freq);
+
+    let time = TextBox::new()
+        .with_placeholder("Time")
+        .fix_width(TEXT_BOX_WIDTH)
+        .lens(MainState::time);
+
+    let volum = TextBox::new()
+        .with_placeholder("Volum")
+        .fix_width(TEXT_BOX_WIDTH)
+        .lens(MainState::volume);
+
+
+    let button = Button::new("Play")
+        .on_click(|_ctx, data: &mut MainState, _env| {
+
+            let freq_f32: f32 = data.freq.parse().expect("Не удалось пропарсить строку в f32");
+            let time_f32: f32 = data.time.parse().expect("Не удалось пропарсить строку в f32");
+            let volume_f32: f32 = data.volume.parse().expect("Не удалось пропарсить строку в f32");
+
+            create_sink(freq_f32, time_f32, volume_f32)
+
+        });
+
+
+    let textboxs_for_sink = Flex::row()
+        .with_child(frequency)
+        .with_child(time)
+        .with_child(volum);
+
     let layout = Flex::column()
-        .with_child(label)
         .with_spacer(VERTICAL_WIDGET_SPACING)
-        .with_child(textbox);
+        .with_child(textboxs_for_sink)
+        .with_spacer(VERTICAL_WIDGET_SPACING)
+        .with_child(button);
+
 
     // center the two widgets in the available space
     Align::centered(layout)
+}
+
+fn create_sink(freq: f32, time: f32, volume: f32) {
+
+    // Создаем источник синусоидального сигнала с частотой 440 Гц.
+    let (_stream, stream_handle) = OutputStream::try_default().unwrap();
+    let sink = Sink::try_new(&stream_handle).unwrap();
+
+    sink.append(add_source(freq, time, volume));
+
+    sink.sleep_until_end();
+
 }
 
 fn add_source(freq: f32, time: f32, volume: f32) -> Amplify<TakeDuration<SineWave>> {
