@@ -19,16 +19,6 @@ struct MainState {
     volume: String,
 }
 
-// impl Lens<MainState, f32> for MainState {
-//     fn with<V, F: FnOnce(&f32) -> V>(&self, data: &MainState, f: F) -> V {
-//         f(&data.freq)
-//     }
-
-//     fn with_mut<V, F: FnOnce(&mut f32) -> V>(&self, data: &mut MainState, f: F) -> V {
-//         f(&mut data.freq)
-//     }
-// }
-
 fn main() {
 
     // describe the main window
@@ -51,8 +41,6 @@ fn main() {
 }
 
 fn build_root_widget() -> impl Widget<MainState> {
-    
-    // let label = Label::new(|data: &MainState, _env: &Env| format!("Hello {}!", data.name));
 
     let frequency = TextBox::new()
         .with_placeholder("Frequency")
@@ -94,13 +82,12 @@ fn build_root_widget() -> impl Widget<MainState> {
         .with_child(button);
 
 
-    // center the two widgets in the available space
     Align::centered(layout)
+
 }
 
 fn create_sink(freq: f32, time: f32, volume: f32) {
 
-    // Создаем источник синусоидального сигнала с частотой 440 Гц.
     let (_stream, stream_handle) = OutputStream::try_default().unwrap();
     let sink = Sink::try_new(&stream_handle).unwrap();
 
@@ -111,5 +98,5 @@ fn create_sink(freq: f32, time: f32, volume: f32) {
 }
 
 fn add_source(freq: f32, time: f32, volume: f32) -> Amplify<TakeDuration<SineWave>> {
-     SineWave::new(freq).take_duration(Duration::from_secs_f32(time)).amplify(volume)
+    SineWave::new(freq).take_duration(Duration::from_secs_f32(time)).amplify(volume)
 }
